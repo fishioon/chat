@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+import "google/api/annotations.proto";
+
+package chat;
+
+// Interface exported by the server.
+service Chat {
+  // A simple RPC.
+  //
+  // Obtains the feature at a given position.
+  //
+  // A feature with an empty name is returned if there's no feature at the given
+  // position.
+  // rpc Login() returns (Feature) {}
+
+  // A server-to-client streaming RPC.
+  //
+  // Obtains the Features available within the given Rectangle.  Results are
+  // streamed rather than returned at once (e.g. in a response message with a
+  // repeated field), as the rectangle may cover a large area and contain a
+  // huge number of features.
+  // rpc ListFeatures(Rectangle) returns (stream Feature) {}
+
+  // rpc RecordRoute(stream Point) returns (RouteSummary) {}
+
+  rpc Auth(AuthReq) returns (AuthRes) {
+    option (google.api.http) = {
+      post : "/v1/chat/auth"
+      body : "*"
+    };
+  }
+
+  rpc Connect(ConnectReq) returns (stream Msg) {
+    option (google.api.http) = {
+      get : "/v1/chat/connect"
+    };
+  }
+
+  rpc Unicast(Msg) returns (Msg) {
+    option (google.api.http) = {
+      post : "/v1/chat/unicast"
+      body : "*"
+    };
+  }
+
+  rpc Broadcast(Msg) returns (Msg) {
+    option (google.api.http) = {
+      post : "/v1/chat/broadcast"
+      body : "*"
+    };
+  }
+
+  rpc JoinGroup(JoinGroupReq) returns (JoinGroupRes) {
+    option (google.api.http) = {
+      post : "/v1/chat/join"
+      body : "*"
+    };
+  }
+
+  rpc LeaveGroup(LeaveGroupReq) returns (None) {
+    option (google.api.http) = {
+      post : "/v1/chat/leave"
+      body : "*"
+    };
+  }
+}
+
+message None {}
+
+enum AuthType {
+  NAME_PWD = 0;
+  EMAIL_PWD = 1;
+  PHONE_PWD = 2;
+  PHONE_CODE = 3;
+}
+
+message AuthReq {
+  AuthType auth_type = 1;
+  string auth_key = 2;
+  string auth_value = 3;
+}
+
+// auth response
+message AuthRes {
+  string session_id = 1;
+  uint64 uid = 2;
+  string name = 3;
+}
+
+message ConnectReq { string session_id = 1; }
+
+message JoinGroupReq {
+  string session_id = 1;
+  string url = 2;
+}
+message JoinGroupRes { uint64 group_id = 1; }
+
+message LeaveGroupReq {
+  string session_id = 1;
+  uint64 group_id = 2;
+}
+
+message Msg {
+  uint64 msg_id = 1;
+  uint64 from_uid = 2;
+  uint64 dest_id = 3; // broadcast: group_id; unicast: to_uid
+  ContentType content_type = 4;
+  string content = 5;
+  string name = 6; // from user nickname
+}
+
+enum ContentType {
+  TEXT = 0;
+  IMAGE = 1;
+}
